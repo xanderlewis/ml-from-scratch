@@ -1,2 +1,2 @@
-- [ ] add regularisation to the loss function in 2d_linear_classifier.py
+- [ ] add regularisation (L2? L1?) to the loss function in 2d_linear_classifier.py
 - [ ] also plot the (moving) decision boundary each epoch
