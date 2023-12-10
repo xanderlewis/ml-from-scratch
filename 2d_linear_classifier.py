@@ -1,9 +1,10 @@
-# A quick and dirty implementation of a linear classifier.
+# A quick and dirty (and quite hacky) implementation of a (2D --> 1D) linear classifier.
 
 import random
 import numpy as np # (for random number generation)
 import matplotlib.pyplot as plt
 from termcolor import cprint
+import time
 
 class BinaryLinearClassifier:
 	"""A linear classifier. Input vectors are two-dimensional; output is a scalar."""
@@ -14,6 +15,7 @@ class BinaryLinearClassifier:
 		self.w1 = random.uniform(-1.0, 1.0)
 		self.w2 = random.uniform(-1.0, 1.0)
 		self.b = 0.0
+		self.REG_COEFF = 0.2
 
 	def __call__(self, x1, x2):
 		"""Call the model (perform an inference) on a given input vector."""
@@ -22,14 +24,16 @@ class BinaryLinearClassifier:
 
 	# [The below methods assume we're using a loss function of the form (y_p - y) ** 2]
 	def grad_w1(self, x1, x2, y):
-		return 2 * (self.w1*x1 + self.w2*x2 + self.b - y) * x1
+		return 2 * (self.w1*x1 + self.w2*x2 + self.b - y) * x1 + self.REG_COEFF * 2 * self.w1
 
 	def grad_w2(self, x1, x2, y):
-		return 2 * (self.w1*x1 + self.w2*x2 + self.b - y) * x2
+		return 2 * (self.w1*x1 + self.w2*x2 + self.b - y) * x2 + self.REG_COEFF * 2 * self.w2
 
 	def grad_b(self, x1, x2, y):
 		return 2 * (self.w1*x1 + self.w2*x2 + self.b - y)
 
+	def L2_loss(self):
+		return self.REG_COEFF * (self.w1 **2 + self.w2 ** 2)
 
 def mean(l):
 	return sum(l) / len(l)
@@ -103,6 +107,8 @@ plt.ion()
 # -- Training loop --
 # We'll do 'full batch' training. (i.e. 'batch size' is equal to the number of training examples)
 epochs_done = 0
+converged = False
+old_loss = 100
 
 while(True):
 	print(f'\n(Epoch {epochs_done})')
@@ -113,7 +119,7 @@ while(True):
 	#print('current predictions:', predictions)
 
 	# (II) Compute loss
-	loss = mean_squared_error(predictions, true_classes)
+	loss = mean_squared_error(predictions, true_classes) + model.L2_loss()
 	cprint(f'loss: {loss}', 'red')
 
 	# TODO: add regularisation penalty to loss function (then I need to change the gradient formulae accordingly)
@@ -129,12 +135,20 @@ while(True):
 	percent_accuracy = [i == j for i, j in zip(predicted_classes, true_classes)].count(True) * 100 / (NUM_EACH_CLASS * 2)
 	cprint(f'accuracy: {percent_accuracy:.2f}%', 'blue')
 
-	if percent_accuracy == 100.0:
-		cprint(f'Converged after {epochs_done} epochs. 👏🏻', attrs=['bold'])
+	if percent_accuracy == 100.0 and not converged:
+		cprint(f'Classifications are correct after {epochs_done} epochs. 👏🏻', attrs=['bold'])
 		cprint(f'\nInitial model parameters: \nw1 = {initial_w1} \nw2 = {initial_w2} \nb = {initial_b}', 'yellow')
 		cprint(f'\nFinal model parameters: \nw1 = {model.w1} \nw2 = {model.w2} \nb = {model.b}', 'magenta')
-		input('Press enter to quit.')
-		quit()
+		input('Press enter to continue to minimise loss (and hopefully achieve a model that will generalise better!).')
+		converged = True
+
+	if epochs_done % 50 == 0:
+		if old_loss - loss <= 0.0025:
+			print(old_loss - loss)
+			input('Loss seems to have converged. Press enter to quit.')
+			quit()
+		else:
+			old_loss = loss
 
 	#print('weight 1: ', model.w1)
 	#print('weight 2: ', model.w2)
