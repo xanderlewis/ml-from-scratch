@@ -8,4 +8,4 @@ After a few years of just doing mathematics, I'm playing around re-acquainting m
 
 
 ### Notes
-- I'm not quite sure what the 'correct' OOP manifestation of these kind of systems is, so for now I've just tried to get stuff working (potentially in a rather hacky and non-modular way). ...but hopefully it's reasonably sensible!![Figure_2]
+- I'm not quite sure what the 'correct' OOP manifestation of these kind of systems is, so for now I've just tried to get stuff working (potentially in a rather hacky and non-modular way). ...but hopefully it's reasonably sensible!
