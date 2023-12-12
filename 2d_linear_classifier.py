@@ -22,7 +22,7 @@ class BinaryLinearClassifier:
 		# The output is a weighted sum of the input components, plus a scalar bias.
 		return self.w1*x1 + self.w2*x2 + self.b
 
-	# [The below methods assume we're using a loss function of the form (y_p - y) ** 2]
+	# [The below methods assume we're using a loss function of the form (y_p - y) ** 2 + L_2(W)]
 	def grad_w1(self, x1, x2, y):
 		return 2 * (self.w1*x1 + self.w2*x2 + self.b - y) * x1 + self.REG_COEFF * 2 * self.w1
 
@@ -75,103 +75,108 @@ def plot_prediction_surface():
 	plt.imshow(surface, cmap='plasma', extent=[-1 - s,1 + s,-1 - s,1 + s])
 
 def plot_data_points():
-	plt.scatter([p[0] for p in points], [p[1] for p in points], c='white', s=1)
+	plt.scatter([p[0] for p in points[:NUM_EACH_CLASS]], [p[1] for p in points[:NUM_EACH_CLASS]], c='black', s=1)
+	plt.scatter([p[0] for p in points[NUM_EACH_CLASS:]], [p[1] for p in points[NUM_EACH_CLASS:]], c='white', s=1)
 
-rng = np.random.default_rng()
+def plot_decision_boundary(model):
+	x = np.linspace(-1 - STANDARD_DEVIATION * 2, 1 + STANDARD_DEVIATION * 2, 10)
+	y = -1 * (model.w1 / model.w2) * x + (0.5 - model.b) / model.w2
+	plt.plot(x, y, color='0', alpha=0.3, linewidth=2, linestyle='dashed')
 
-# Data parameters
-NUM_EACH_CLASS = 100
-STANDARD_DEVIATION = 0.2
+# Demo the linear classifier with some random data
+if __name__ == '__main__':
+	rng = np.random.default_rng()
 
-# Model hyperparameters
-EPOCHS = 300
-LEARNING_RATE = 0.15
+	# Data parameters
+	NUM_EACH_CLASS = 100
+	STANDARD_DEVIATION = 0.2
 
-# Generate training (and, in this case, testing) data
-points = generate_points(n=NUM_EACH_CLASS, std_dev=STANDARD_DEVIATION)
-true_classes = [0] * NUM_EACH_CLASS + [1] * NUM_EACH_CLASS
+	# Model hyperparameters
+	EPOCHS = 300
+	LEARNING_RATE = 0.15
 
-# LATER: plot the initial (randomly initialised) and final decision boundaries.
-# (plot w1 * x1 + w2 * x2 + b = 0.5)
+	# Generate training (and, in this case, testing) data
+	points = generate_points(n=NUM_EACH_CLASS, std_dev=STANDARD_DEVIATION)
+	true_classes = [0] * NUM_EACH_CLASS + [1] * NUM_EACH_CLASS
 
-# Create our model
-model = BinaryLinearClassifier()
+	# LATER: plot the initial (randomly initialised) and final decision boundaries.
+	# (plot w1 * x1 + w2 * x2 + b = 0.5)
 
-# Save the initial model parameters
-initial_w1 = model.w1
-initial_w2 = model.w2
-initial_b = model.b
+	# Create our model
+	model = BinaryLinearClassifier()
 
-plt.ion()
+	# Save the initial model parameters
+	initial_w1 = model.w1
+	initial_w2 = model.w2
+	initial_b = model.b
 
-# -- Training loop --
-# We'll do 'full batch' training. (i.e. 'batch size' is equal to the number of training examples)
-epochs_done = 0
-converged = False
-old_loss = 100
+	plt.ion()
 
-while(True):
-	print(f'\n(Epoch {epochs_done})')
+	# -- Training loop --
+	# We'll do 'full batch' training. (i.e. 'batch size' is equal to the number of training examples)
+	epochs_done = 0
+	converged = False
+	old_loss = 100
 
-	# (I) Inference
-	predictions = [model(point[0], point[1]) for point in points]
+	while(True):
+		print(f'\n(Epoch {epochs_done})')
 
-	#print('current predictions:', predictions)
+		# (I) Inference
+		predictions = [model(point[0], point[1]) for point in points]
 
-	# (II) Compute loss
-	loss = mean_squared_error(predictions, true_classes) + model.L2_loss()
-	cprint(f'loss: {loss}', 'red')
+		#print('current predictions:', predictions)
 
-	# TODO: add regularisation penalty to loss function (then I need to change the gradient formulae accordingly)
+		# (II) Compute loss
+		loss = mean_squared_error(predictions, true_classes) + model.L2_loss()
+		cprint(f'loss: {loss}', 'red')
 
-	# Compute 'accuracy'
-	# Choose the nearest class to each prediction
-	predicted_classes = [round_prediction(p) for p in predictions]
+		# Compute 'accuracy'
+		# Choose the nearest class to each prediction
+		predicted_classes = [round_prediction(p) for p in predictions]
 
-	#print('predicted classes: ', predicted_classes)
-	#print('true classes:      ', true_classes)
+		#print('predicted classes: ', predicted_classes)
+		#print('true classes:      ', true_classes)
 
-	# Count the number of correct predictions and calculate a percentage
-	percent_accuracy = [i == j for i, j in zip(predicted_classes, true_classes)].count(True) * 100 / (NUM_EACH_CLASS * 2)
-	cprint(f'accuracy: {percent_accuracy:.2f}%', 'blue')
+		# Count the number of correct predictions and calculate a percentage
+		percent_accuracy = [i == j for i, j in zip(predicted_classes, true_classes)].count(True) * 100 / (NUM_EACH_CLASS * 2)
+		cprint(f'accuracy: {percent_accuracy:.2f}%', 'blue')
 
-	if percent_accuracy == 100.0 and not converged:
-		cprint(f'Classifications are correct after {epochs_done} epochs. 👏🏻', attrs=['bold'])
-		cprint(f'\nInitial model parameters: \nw1 = {initial_w1} \nw2 = {initial_w2} \nb = {initial_b}', 'yellow')
-		cprint(f'\nFinal model parameters: \nw1 = {model.w1} \nw2 = {model.w2} \nb = {model.b}', 'magenta')
-		input('Press enter to continue to minimise loss (and hopefully achieve a model that will generalise better!).')
-		converged = True
-
-	if epochs_done % 50 == 0:
-		if old_loss - loss <= 0.0025:
-			print(old_loss - loss)
-			input('Loss seems to have converged. Press enter to quit.')
-			quit()
+		# Plot stuff
+		plt.clf()
+		plot_prediction_surface()
+		plot_data_points()
+		plot_decision_boundary(model)
+		plt.xlim(-1, 1)
+		plt.ylim(-1, 1)
+		plt.show()
+		if not converged:
+			plt.pause(0.05)
 		else:
-			old_loss = loss
+			plt.pause(0.001)
 
-	#print('weight 1: ', model.w1)
-	#print('weight 2: ', model.w2)
-	#print('bias: ', model.b)
+		if percent_accuracy == 100.0 and not converged:
+			cprint(f'Classifications are correct after {epochs_done} epochs. 👏🏻', attrs=['bold'])
+			cprint(f'\nInitial model parameters: \nw1 = {initial_w1} \nw2 = {initial_w2} \nb = {initial_b}', 'yellow')
+			cprint(f'\nFinal model parameters: \nw1 = {model.w1} \nw2 = {model.w2} \nb = {model.b}', 'magenta')
+			input('Press enter to continue to minimise loss (and hopefully achieve a model that will generalise better!).')
+			converged = True
 
-	# Plot stuff
-	plt.clf()
-	plot_prediction_surface()
-	plot_data_points()
-	plt.show()
-	plt.pause(0.01)
+		if epochs_done % 50 == 0:
+			if old_loss - loss <= 0.0025:
+				input('Loss seems to have converged. Press enter to quit.')
+				quit()
+			else:
+				old_loss = loss
 
-	# (III) Compute gradient of loss wrt model parameters
-	# (Differentiation is linear ==> derivative of the mean is the mean of the derivatives)
-	g_w1 = mean([model.grad_w1(x[0], x[1], y) for x, y in zip(points, true_classes)])
-	g_w2 = mean([model.grad_w2(x[0], x[1], y) for x, y in zip(points, true_classes)])
-	g_b = mean([model.grad_b(x[0], x[1], y) for x, y in zip(points, true_classes)])
+		# (III) Compute gradient of loss wrt model parameters
+		# (Differentiation is linear ==> derivative of the mean is the mean of the derivatives)
+		g_w1 = mean([model.grad_w1(x[0], x[1], y) for x, y in zip(points, true_classes)])
+		g_w2 = mean([model.grad_w2(x[0], x[1], y) for x, y in zip(points, true_classes)])
+		g_b = mean([model.grad_b(x[0], x[1], y) for x, y in zip(points, true_classes)])
 
-	# (IV) Update parameters
-	model.w1 -= LEARNING_RATE * g_w1
-	model.w2 -= LEARNING_RATE * g_w2
-	model.b -= LEARNING_RATE * g_b
+		# (IV) Update parameters
+		model.w1 -= LEARNING_RATE * g_w1
+		model.w2 -= LEARNING_RATE * g_w2
+		model.b -= LEARNING_RATE * g_b
 
-	epochs_done += 1
-
-	#input()
+		epochs_done += 1
