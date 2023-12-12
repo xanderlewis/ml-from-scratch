@@ -120,7 +120,6 @@ def loss_grad_single_wrt_b(x, y, model):
 	"""Computes the gradient of the loss with respect to b on a single training example."""
 	# Returns a b-shaped vector of partial derivatives
 	# (I could probably np.vectorize the gradient function instead)
-
 	return np.fromfunction(lambda l, m: (model(x)[0, m.astype(int)] - y[m.astype(int)]) / 5, shape=model.b.shape)
 
 def loss_grad_wrt_W(x_batch, y_batch, model):
@@ -142,6 +141,34 @@ def loss_grad_wrt_b(x_batch, y_batch, model):
 	for row_index in range(num_samples):
 		total += loss_grad_single_wrt_b(x_batch[row_index, :], y_batch[row_index, :], model)
 	return total / num_samples
+
+def loss_grad_check_W_component(x_batch, y_batch, model, component, delta=1e-7):
+	"""Computes an approximation to the gradient of loss wrt a single component of W"""
+	# Takes a batch of inputs and target outputs, feeds the inputs into the model with translated versions of W
+	# and compares.
+	old_loss = batch_loss(model(x_batch), y_batch)
+
+	delta_matrix = np.zeros(shape=model.W.shape)
+	delta_matrix[component[0], component[1]] = delta
+
+	model.W += delta_matrix
+	new_loss = batch_loss(model(x_batch), y_batch)
+	model.W -= delta_matrix
+
+	return (new_loss - old_loss) / delta
+
+def loss_grad_check_b_component(x_batch, y_batch, model, component, delta=1e-7):
+	"""Computes an approximation to the gradient of loss wrt a single component of b"""
+	old_loss = batch_loss(model(x_batch), y_batch)
+
+	delta_vector = np.zeros(shape=model.b.shape)
+	delta_vector[component] = delta
+
+	model.b += delta_vector
+	new_loss = batch_loss(model(x_batch), y_batch)
+	model.b -= delta_vector
+
+	return (new_loss - old_loss) / delta
 
 
 # Demo the classifier by training it on MNIST
@@ -199,6 +226,12 @@ if __name__ == '__main__':
 			# (IV) COMPUTE GRADIENT FOR CURRENT BATCH
 			grad_wrt_W = loss_grad_wrt_W(x_batch, y_batch, model)
 			grad_wrt_b = loss_grad_wrt_b(x_batch, y_batch, model)
+
+			# (GRAD CHECK STUFF (ON A SINGLE COMPONENT OF W))
+			#check = loss_grad_check_W_component(x_batch, y_batch, model, (400, 3))
+			#cprint(f'grad wrt W component check:\t{check}', 'magenta')
+			#print(f'real grad wrt W component:\t{grad_wrt_W[400, 3]}')
+			#cprint(f'approximation error: {check - grad_wrt_W[400, 3]}', 'red')
 
 			# (V) ADJUST MODEL PARAMETERS ACCORDINGLY
 			model.W -= LEARNING_RATE * grad_wrt_W

@@ -4,3 +4,4 @@
 - [ ] train the linear classifier on MNIST, and then visualise the weights matrix (by reshaping its columns back into 28x28 squares, and using plt.imshow)
 - [ ] implement a neural net with one hidden layer; gradient computation from scratch
 - [ ] implement a k-nearest neighbours classifier
+- [ ] implement a grad_check function in the linear classifier to approximate the gradients I'm computing analytically
