@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 from termcolor import cprint
 
 class LinearClassifier:
@@ -111,10 +112,7 @@ def loss_grad_single_wrt_W(x, y, model):
 	"""Computes the gradient of the loss with respect to W on a single training example."""
 	# Returns a W-shaped matrix of partial derivatives
 	# W should have shape (28 * 28, 10), so l should range through 0 to 28*28 -1, and m through 0 to 9
-
-	#return np.fromfunction(lambda l, m: (model(x)[0, m.astype(int)] - y[m.astype(int)]) * (-2 * x[l.astype(int)] + 1) / 5, shape=model.W.shape)
 	
-	# ORIGINAL BELOW:
 	return np.fromfunction(lambda l, m: (model(x)[0, m.astype(int)] - y[m.astype(int)]) * x[l.astype(int)] / 5, shape=model.W.shape)
 
 
@@ -122,13 +120,6 @@ def loss_grad_single_wrt_b(x, y, model):
 	"""Computes the gradient of the loss with respect to b on a single training example."""
 	# Returns a b-shaped vector of partial derivatives
 	# (I could probably np.vectorize the gradient function instead)
-	#print(y)
-	#plt.imshow(x.reshape(28,28), cmap='plasma')
-	#plt.show()
-	#input()
-
-	# DISCOVERY FROM THE ABOVE: THE TRAINING EXAMPLES AND LABELS ARE BEING FED IN OUT OF ORDER!!!
-	# OH NO!!!
 
 	return np.fromfunction(lambda l, m: (model(x)[0, m.astype(int)] - y[m.astype(int)]) / 5, shape=model.b.shape)
 
@@ -156,9 +147,9 @@ def loss_grad_wrt_b(x_batch, y_batch, model):
 # Demo the classifier by training it on MNIST
 if __name__ == '__main__':
 	# Model hyperparameters
-	EPOCHS = 30
-	BATCH_SIZE = 64
-	LEARNING_RATE = 0.001
+	EPOCHS = 10
+	BATCH_SIZE = 128
+	LEARNING_RATE = 0.005
 
 	# Load MNIST dataset
 	(x_train, y_train), (x_test, y_test) = prepare_mnist()
@@ -182,16 +173,8 @@ if __name__ == '__main__':
 		# Compute accuracy on whole training set
 		rounded_y_preds = round_y_preds(all_y_preds)
 		num_correct = [(rounded_y_preds[i, :] == y_train[i, :]).all() for i in range(rounded_y_preds.shape[0])].count(True)
-		accuracy = num_correct #/ rounded_y_preds.shape[0]
-		cprint(f'current accuracy: {accuracy}', 'green')
-
-		#print(all_y_preds[:7, :5])
-		#print(y_train[:7, :5])
-		#input()
-
-		#print('preds:\n', rounded_y_preds[:20, :])
-		#print('truth:\n', y_train[:520, :])
-		#print(y_train.shape)
+		accuracy = (num_correct / rounded_y_preds.shape[0]) * 100
+		cprint(f'current accuracy: {accuracy:.2f}%', 'green')
 
 		batch_counter = 0
 
@@ -209,20 +192,13 @@ if __name__ == '__main__':
 			y_preds = model(x_batch) # (Feed in BATCH_SIZE samples, ask for BATCH_SIZE predictions each of length 10)
 
 			# (III) COMPUTE LOSS (of batch)
-			if batch_counter % 50 == 0:
+			if batch_counter % 100 == 0:
 				b_loss = batch_loss(y_preds, y_batch)
 				cprint(f'batch loss: {b_loss}', 'red')
-
-			#print(y_batch[0, :])
-			#plt.imshow(x_batch[0, :].reshape(28,28), cmap='plasma')
-			#plt.show()
-			#input()
 
 			# (IV) COMPUTE GRADIENT FOR CURRENT BATCH
 			grad_wrt_W = loss_grad_wrt_W(x_batch, y_batch, model)
 			grad_wrt_b = loss_grad_wrt_b(x_batch, y_batch, model)
-
-			#print(np.mean(grad_wrt_W))
 
 			# (V) ADJUST MODEL PARAMETERS ACCORDINGLY
 			model.W -= LEARNING_RATE * grad_wrt_W
@@ -233,6 +209,10 @@ if __name__ == '__main__':
 		# No more batches; finish the epoch.
 		batch_manager.reset()
 		batch_counter = 0
+
+	# Pickle the resulting trained model
+	with open('mnist_linear_model.pickle', 'wb') as f:
+		pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
 
 
 
