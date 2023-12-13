@@ -3,13 +3,23 @@ import matplotlib.pyplot as plt
 import pickle
 from termcolor import cprint
 
+# Options for running the training demo below
+LOGGING_EXTRA_STUFF = True
+LIVE_VISUALISING = True
+
 class LinearClassifier:
 	"""A linear classifier mapping between two ('feature space' and 'output space') finite-dimensional Euclidean spaces."""
 	def __init__(self, input_dim, output_dim, seed=None):
 		# Initialise model parameters
-		#self.W = np.random.uniform(-1.0, 1.0, size=(input_dim, output_dim))
+		#self.W = np.random.uniform(-0.01, 0.01, size=(input_dim, output_dim))
 		self.W = np.zeros((input_dim, output_dim))
 		self.b = np.zeros((1, output_dim))
+
+		# FOR MNIST:
+		# Since the weights matrix and the bias vector are initially both zero, all initial prediction vectors
+		# will also be zero. Since np.argmax([0, ..., 0]) = 0, we initially predict that every image is a 0.
+		# Since there are apparently 5923 zeros in the training set, we should expect an initial training accuracy
+		# of 5923/60000 ~ 0.09872.
 
 	def __call__(self, inputs):
 		"""Perform inference on an (n by m) matrix consisting of n rows of m-dimensional input vectors."""
@@ -78,7 +88,9 @@ def one_hot_encode(y):
 def prepare_mnist():
 	# Load MNIST data [shapes (60000, 28, 28) and (60000,)]
 	from keras.datasets import mnist
+	from keras.datasets import fashion_mnist
 	(x_train, y_train), (x_test, y_test) = mnist.load_data()
+	#(x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
 
 	# Reshape train and test feature vectors (we want each sample to be a 60000-dim vector / rank-1 tensor)
 	x_train = x_train.reshape(60000, 28 * 28)
@@ -103,7 +115,7 @@ def round_single_pred(pred):
 def round_y_preds(ys):
 	# return an array where each row is the one-hot encoding of the original row's arg max
 	arg_maxes = np.argmax(ys, axis=1)
-	return np.array([one_hot_encode(n) for n in arg_maxes]).reshape(60000, 10)
+	return np.array([one_hot_encode(n) for n in arg_maxes]).reshape(ys.shape[0], 10)
 
 	# BELOW: previously I was just rounding each class prediction towards 0 or 1; whichever was nearest.
 	#return np.vectorize(round_single_pred)(ys)
@@ -184,6 +196,9 @@ if __name__ == '__main__':
 	# x_train has shape (60000, 28 * 28); y_train has shape (60000, 10)
 	# x_test has shape (10000, 28 * 28); y_test has shape (10000, 10)
 
+	if LIVE_VISUALISING:
+		plt.ion()
+
 	# Create model and a batch manager
 	model = LinearClassifier(28 * 28, 10)
 	batch_manager = BatchManager(x_train, y_train, BATCH_SIZE)
@@ -195,18 +210,30 @@ if __name__ == '__main__':
 		# Compute loss on whole training set
 		all_y_preds = model(x_train)
 		loss = batch_loss(all_y_preds, y_train)
-		cprint(f'loss: {loss}', 'red')
+		cprint(f'training loss: {loss}', 'red')
+
+		# Compute loss on test set
+		y_test_preds = model(x_test)
+		test_loss = batch_loss(y_test_preds, y_test)
+		cprint(f'test loss: {test_loss}', 'red')
 
 		# Compute accuracy on whole training set
 		rounded_y_preds = round_y_preds(all_y_preds)
 		num_correct = [(rounded_y_preds[i, :] == y_train[i, :]).all() for i in range(rounded_y_preds.shape[0])].count(True)
 		accuracy = (num_correct / rounded_y_preds.shape[0]) * 100
-		cprint(f'current accuracy: {accuracy:.2f}%', 'green')
+		cprint(f'training accuracy: {accuracy:.2f}%', 'green')
+
+		# Compute accuracy on test set
+		rounded_y_test_preds = round_y_preds(y_test_preds)
+		test_num_correct = [(rounded_y_test_preds[i, :] == y_test[i, :]).all() for i in range(rounded_y_test_preds.shape[0])].count(True)
+		test_accuracy = (test_num_correct / rounded_y_test_preds.shape[0]) * 100
+		cprint(f'test accuracy: {test_accuracy:.2f}%', 'green')
 
 		batch_counter = 0
 
 		# -- START EPOCH --
 		while True:
+
 			# (I) ATTEMPT TO GET NEXT (MINI) BATCH OF TRAINING DATA
 			x_batch, y_batch = batch_manager.next_batch()
 
@@ -215,17 +242,36 @@ if __name__ == '__main__':
 				print('batch empty.')
 				break
 
+			# Plot model parameters in real time
+			# (shows the first twenty batches of the first epoch individually, then speeds up from then on)
+			if LIVE_VISUALISING and ((batch_counter % 40 == 0) or (epoch == 0 and batch_counter	<= 20)):
+				plt.clf()
+				for i in range(10):
+					plt.subplot(2, 5, i + 1)
+					weights = (model.W + model.b)[ : , i].reshape(28, 28)
+					plt.title(i)
+					plt.imshow((weights), cmap='RdBu')
+					frame = plt.gca()
+					frame.axes.get_xaxis().set_visible(False)
+					frame.axes.get_yaxis().set_visible(False)
+				plt.show()
+				plt.pause(0.2)
+
 			# (II) RUN THE MODEL
 			y_preds = model(x_batch) # (Feed in BATCH_SIZE samples, ask for BATCH_SIZE predictions each of length 10)
 
 			# (III) COMPUTE LOSS (of batch)
 			if batch_counter % 100 == 0:
 				b_loss = batch_loss(y_preds, y_batch)
-				cprint(f'batch loss: {b_loss}', 'red')
+				cprint(f'batch {batch_counter} loss: {b_loss}', 'red')
+
 
 			# (IV) COMPUTE GRADIENT FOR CURRENT BATCH
 			grad_wrt_W = loss_grad_wrt_W(x_batch, y_batch, model)
 			grad_wrt_b = loss_grad_wrt_b(x_batch, y_batch, model)
+
+			if LOGGING_EXTRA_STUFF:
+				cprint(f'[batch {batch_counter}] mean grad wrt W, b: {np.mean(grad_wrt_W)},\t{np.mean(grad_wrt_b)}', 'blue')
 
 			# (GRAD CHECK STUFF (ON A SINGLE COMPONENT OF W))
 			#check = loss_grad_check_W_component(x_batch, y_batch, model, (400, 3))
@@ -244,7 +290,7 @@ if __name__ == '__main__':
 		batch_counter = 0
 
 	# Pickle the resulting trained model
-	with open('mnist_linear_model.pickle', 'wb') as f:
+	with open('fashion_mnist_linear_model.pickle', 'wb') as f:
 		pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
 
 
