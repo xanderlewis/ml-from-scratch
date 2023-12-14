@@ -1,7 +1,7 @@
 - [x] add regularisation (L2? L1?) to the loss function in 2d_linear_classifier.py
 - [x] also plot the (moving) decision boundary each epoch
 - [x] implement an R^n --> R^m linear classifier
-- [ ] train the linear classifier on MNIST, and then visualise the weights matrix (by reshaping its columns back into 28x28 squares, and using plt.imshow)
-- [ ] implement a neural net with one hidden layer; gradient computation from scratch
+- [x] train the linear classifier on MNIST, and then visualise the weights matrix (by reshaping its columns back into 28x28 squares, and using plt.imshow)
+- [x] implement a grad_check function in the linear classifier to approximate the gradients I'm computing analytically
+- [ ] implement a basic neural net; gradient computation from scratch (backpropagation?)
 - [ ] implement a k-nearest neighbours classifier
-- [ ] implement a grad_check function in the linear classifier to approximate the gradients I'm computing analytically

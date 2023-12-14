@@ -61,6 +61,11 @@ def generate_points(n, std_dev=0.2):
 		class1.append(list(rng.normal(loc1, std_dev, 2)))
 		class2.append(list(rng.normal(loc2, std_dev, 2)))
 
+	# ALTERNATIVE: generate clusters arranged horizontally.
+	#for i in range(n):
+	#	class1.append([rng.normal(-0.5, std_dev, 1), rng.normal(0.0, std_dev, 1)])
+	#	class2.append([rng.normal(0.5, std_dev, 1), rng.normal(0.0, std_dev, 1)])
+
 	return class1 + class2
 
 def sample_model_over_grid(density=16):
