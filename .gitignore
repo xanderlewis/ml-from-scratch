@@ -164,3 +164,4 @@ cython_debug/
 
 # Other stuff
 papers/
+markov_models/

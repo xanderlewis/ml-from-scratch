@@ -40,6 +40,7 @@ class Layer:
 
 	def z(self, v):
 		"""Compute *just* the weighted sum (plus bias) of the previous layer's activations."""
+		# The layer's 'affine function'
 		return self.W @ v + self.b
 
 # Activation functions and their derivatives...
