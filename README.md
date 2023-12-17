@@ -6,6 +6,8 @@ After a few years of just doing mathematics, I'm playing around re-acquainting m
 
 <img src="https://github.com/xanderlewis/ml-from-scratch/assets/8215808/b5e294fa-77da-41be-8539-1d4158736dbd" width="500"/> <img src="https://github.com/xanderlewis/ml-from-scratch/assets/8215808/a282f891-a0f9-40d2-a970-970faeb9c0b1" width="500"/>
 
+<img width="500" alt="スクリーンショット 2023-12-17 17 17 45" src="https://github.com/xanderlewis/ml-from-scratch/assets/8215808/a7a2a9fc-5133-48d5-93f6-58462451dc7d">
+
 
 ### Notes
 - I'm not quite sure what the 'correct' OOP manifestation of these kind of systems is, so for now I've just tried to get stuff working (potentially in a rather hacky and non-modular way). ...but hopefully it's reasonably sensible!
