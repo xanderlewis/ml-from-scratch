@@ -43,6 +43,11 @@ class Descender:
 		self.eta = eta
 		self.colour = colour
 
+		# For SGD with momentum
+		self.vx = 0
+		self.vy = 0
+		self.coeff_friction = 0.8
+
 	def update(self):
 		"""Update the position according to the 'rule' and the given function."""
 		# Compute the new position by evaluating the gradient at the current point, and add this to history
@@ -62,10 +67,22 @@ class Descender:
 			grad_x += random.uniform(-1, 1) * 2
 			grad_y += random.uniform(-1, 1) * 2
 
-		# Update position according to gradient
 		self.history.append((self.x, self.y))
-		self.x -= self.eta * grad_x
-		self.y -= self.eta * grad_y
+
+		if self.rule == Rule.VANILLA or self.rule == Rule.SGD:
+			# Update position according to gradient
+			self.x -= self.eta * grad_x
+			self.y -= self.eta * grad_y
+
+		elif self.rule == Rule.SGD_MOMENTUM:
+			# Update velocity according to gradient
+			# (Impulse in direction of descent)
+			self.vx = self.coeff_friction * self.vx - self.eta * grad_x
+			self.vy = self.coeff_friction * self.vy - self.eta * grad_y
+
+			# Update position according to velocity
+			self.x += self.vx
+			self.y += self.vy
 
 	def show(self):
 		# Show the full history of the descender
@@ -98,13 +115,15 @@ def get_user_input():
 		cprint(f'\n[configuring descender {i + 1}]', attrs=['bold'])
 		sx = float(input('Starting x: '))
 		sy = float(input('Starting y: '))
-		r = input('Rule? [v (vanilla), sgd] ')
+		r = input('Rule? [v (vanilla), sgd, sgdm (sgd w/ momentum)] ')
 		if r == 'v':
 			r = Rule.VANILLA
 		elif r == 'sgd' or r == 's':
 			r = Rule.SGD
+		elif r == 'sgdm' or r == 'sm':
+			r = Rule.SGD_MOMENTUM
 
-		descenders.append(Descender(sx, sy, field, r))
+		descenders.append(Descender(sx, sy, field, r, colour=str(round(random.uniform(0.0,0.3), 1))))
 
 	return field, descenders, iterations
 
