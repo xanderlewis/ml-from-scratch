@@ -19,9 +19,9 @@ X, Y = np.meshgrid(x, y)
 
 
 class Rule(Enum):
-	VANILLA = 0
-	SGD = 1
-	SGD_MOMENTUM = 2
+	VANILLA = 0 # Standard (first-order) gradient descent
+	SGD = 1 # 'Stochastic' gradient descent (we introduce some noise to each update to simulate an approximation)
+	SGD_MOMENTUM = 2 # Gradient descent with 'momentum' (an exponentially-weighted moving average of the gradient)
 
 class ScalarField:
 	def __init__(self, f, cmap):

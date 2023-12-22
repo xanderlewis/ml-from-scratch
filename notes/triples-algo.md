@@ -19,7 +19,6 @@ So maybe let's talk about 'tokens' instead of words.
 Training on the example 'I want to go\nI want a cake' with (let's call it) n = 2 yields
 
 ```
-
 {
 	'I': {1: 'want'},
 	'want': {0.5: 'to', 0.5: 'a'},
@@ -28,7 +27,7 @@ Training on the example 'I want to go\nI want a cake' with (let's call it) n = 2
 	'I want': {0.5: 'to', 0.5: 'a'},
 	'want to': {1: 'go'},
 	'want a': {1: 'cake'}
-}.
+}
 ```
 
 We could do the same process but with *n = 3* and learn associations between *triples* of words and their successors as well.
